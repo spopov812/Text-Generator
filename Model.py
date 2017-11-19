@@ -8,13 +8,13 @@ def build_model(vocab_size):
 
     model = Sequential()
 
-    model.add(LSTM(100, return_sequences=True, input_shape=(None, vocab_size)))
+    model.add(LSTM(150, return_sequences=True, input_shape=(None, vocab_size)))
     model.add(Dropout(.3))
 
-    model.add(LSTM(100, return_sequences=True))
+    model.add(LSTM(150, return_sequences=True))
     model.add(Dropout(.3))
 
-    model.add(LSTM(100, return_sequences=True))
+    model.add(LSTM(150, return_sequences=True))
     model.add(Dropout(.3))
 
     model.add(TimeDistributed(Dense(vocab_size)))
@@ -29,6 +29,41 @@ def build_model(vocab_size):
     )
 
     return model
+
+
+def text_generator(text_size=1000):
+
+    rand_index = np.random.randint(vocab_size)
+
+    text_as_num = []
+    text_as_char = []
+
+    text_as_char.append(index_to_char[rand_index])
+    text_as_num.append(rand_index)
+
+    for i in range(text_size):
+
+        last_char = np.zeros(vocab_size)
+
+        last_char[text_as_num[len(text_as_num) - 1]] = 1
+
+        last_char.reshape(1, 1, vocab_size)
+
+        prediction = np.argmax(model.predict(last_char))
+
+        prediction = prediction[0]
+
+        text_as_num.append(prediction)
+        text_as_char.append(index_to_char[prediction])
+
+
+    final_output = ''
+
+    for i in range(len(text_as_char)):
+        final_output += text_as_char[i]
+
+    print("\n\n%s\n" % final_output)
+
 
 text = open("warpeace_input.txt", 'r').read()
 
@@ -72,4 +107,16 @@ y = y.reshape(len(text) - 1, 1, vocab_size)
 
 model = build_model(vocab_size)
 
-model.fit(x, y, epochs=1, batch_size=32)
+epoch = 0
+
+while True:
+
+    epoch += 1
+
+    print("\n\nStarting Epoch %d\n\n" % epoch)
+
+    model.fit(x, y, epochs=1, batch_size=32)
+
+    if epoch % 1 == 0:
+        model.save_weights('Epoch{}.hdf5'.format(epoch))
+        text_generator()
